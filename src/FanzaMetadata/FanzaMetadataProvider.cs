@@ -57,7 +57,7 @@ public class FanzaMetadataProvider : OnDemandMetadataProvider
         var doujinGameScrapper = new DoujinGameScrapper(
             CustomLogger.GetLogger<DoujinGameScrapper>(nameof(DoujinGameScrapper)),
             clientHandler);
-        var gameScrapper = new GameScrapper(CustomLogger.GetLogger<GameScrapper>(nameof(GameScrapper)), clientHandler);
+        var gameScrapper = new FanzaGameScrapper(CustomLogger.GetLogger<FanzaGameScrapper>(nameof(FanzaGameScrapper)), clientHandler);
 
         return new ScrapperManager(new List<IScrapper>() { gameScrapper, doujinGameScrapper });
     }

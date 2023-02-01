@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -61,15 +62,23 @@ public class FanzaTests
     [InlineData("https://dlsoft.dmm.co.jp/detail/sitri_0011/?i3_ref=search&i3_ord=1")]
     public void ShouldGetIdFromLink(string link)
     {
-        var id = GameScrapper.ParseLinkId(link);
+        var id = FanzaGameScrapper.ParseLinkId(link);
         Assert.Equal("sitri_0011", id);
+    }
+
+    [Theory]
+    [InlineData("https://www.dmm.co.jp/mono/pcgame/-/detail/=/cid=2167apc14203/")]
+    public void ShouldGetIdFromMonoLink(string link)
+    {
+        var id = FanzaGameScrapper.ParseLinkId(link);
+        Assert.Equal("2167apc14203", id);
     }
 
 
     [Fact]
     public async void ShouldGetSearchResult()
     {
-        var scrapper = new GameScrapper(new XunitLogger<GameScrapper>(_testOutputHelper));
+        var scrapper = new FanzaGameScrapper(new XunitLogger<FanzaGameScrapper>(_testOutputHelper));
         var res = await scrapper.ScrapSearchPage("恥辱の制服2");
         Assert.NotEmpty(res);
     }
@@ -77,7 +86,7 @@ public class FanzaTests
     [Fact]
     public async void ShouldGetScrapperResult()
     {
-        var scrapper = new GameScrapper(new XunitLogger<GameScrapper>(_testOutputHelper));
+        var scrapper = new FanzaGameScrapper(new XunitLogger<FanzaGameScrapper>(_testOutputHelper));
         var res = await scrapper.ScrapGamePage(new SearchResult("美少女万華鏡 呪われし伝説の少女", "views_0669",
             "https://dlsoft.dmm.co.jp/detail/views_0669/"));
         Assert.NotNull(res);
@@ -86,9 +95,20 @@ public class FanzaTests
     }
 
     [Fact]
+    public async void ShouldGetScrapperResultMonoPage()
+    {
+        var scrapper = new FanzaGameScrapper(new XunitLogger<FanzaGameScrapper>(_testOutputHelper));
+        var res = await scrapper.ScrapGamePage(new SearchResult("もっと！孕ませ！炎のおっぱい異世界 おっぱいメイド学園！", "2167apc14203",
+            "https://www.dmm.co.jp/mono/pcgame/-/detail/=/cid=2167apc14203/"));
+        Assert.NotNull(res);
+        Assert.NotNull(res?.Title);
+        Assert.NotNull(res?.Genres);
+    }
+
+    [Fact]
     public async void ShouldGetScrapperResultFromUrl()
     {
-        var scrapper =  new GameScrapper(new XunitLogger<GameScrapper>(_testOutputHelper));
+        var scrapper = new FanzaGameScrapper(new XunitLogger<FanzaGameScrapper>(_testOutputHelper));
         var res = await scrapper.ScrapGamePage("https://dlsoft.dmm.co.jp/detail/moonstn_0014/?i3_ref=search&i3_ord=2",
             CancellationToken.None);
         Assert.NotNull(res);
@@ -99,7 +119,7 @@ public class FanzaTests
     [Fact]
     public async void ShouldGetScrapperResult2()
     {
-        var scrapper = new GameScrapper(new XunitLogger<GameScrapper>(_testOutputHelper));
+        var scrapper = new FanzaGameScrapper(new XunitLogger<FanzaGameScrapper>(_testOutputHelper));
         var searchRes = await scrapper.ScrapSearchPage("美少女万華鏡 呪われし伝説の少女");
         Assert.NotEmpty(searchRes);
 
@@ -115,7 +135,7 @@ public class FanzaTests
     [Fact]
     public async void ShouldNotGetScrapperResult()
     {
-        var scrapper = new GameScrapper(new XunitLogger<GameScrapper>(_testOutputHelper));
+        var scrapper = new FanzaGameScrapper(new XunitLogger<FanzaGameScrapper>(_testOutputHelper));
         var res = await scrapper.ScrapGamePage(new SearchResult("djsaklnla", "views_0669111111111",
             "https://d11111111lsoft.dmm.co.jp/detail/views_0669/"));
         Assert.Null(res);
@@ -134,11 +154,31 @@ public class FanzaTests
     [Fact]
     public async void ShouldNotGetScrapperResultSearchAfter()
     {
-        var s0 = new GameScrapper(new XunitLogger<GameScrapper>(_testOutputHelper));
+        var s0 = new FanzaGameScrapper(new XunitLogger<FanzaGameScrapper>(_testOutputHelper));
         var manager = new FanzaMetadataProvider.ScrapperManager(new List<IScrapper>() { s0 });
         var test = await manager.ScrapSearchPage("美少女万華鏡_神が造りたもうた少女たち", CancellationToken.None);
 
         var var0 = await manager.ScrapGamePage(test.First(), CancellationToken.None);
         Assert.NotNull(var0);
+    }
+
+
+    [Fact]
+    public async void ManagerShouldGetScrapperResultFromUrl()
+    {
+        var s0 = new FanzaGameScrapper(new XunitLogger<FanzaGameScrapper>(_testOutputHelper));
+        var s1 = new DoujinGameScrapper(new XunitLogger<DoujinGameScrapper>(_testOutputHelper));
+        var manager = new FanzaMetadataProvider.ScrapperManager(new List<IScrapper>() { s0, s1 });
+        var var0 = await manager.ScrapGamePage("https://www.dmm.co.jp/mono/pcgame/-/detail/=/cid=543ka0066/",
+            CancellationToken.None);
+        Assert.NotNull(var0);
+    }
+
+
+    [Fact]
+    public async void Dd()
+    {
+        var dd = "https://review.dmm.com/web/images/pc/45.gif";
+        _testOutputHelper.WriteLine(dd.Substring(dd.LastIndexOf("/", StringComparison.Ordinal) + 1).Replace(".gif", ""));
     }
 }

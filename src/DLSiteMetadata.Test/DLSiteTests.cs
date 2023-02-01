@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Moq;
 using Moq.Contrib.HttpClient;
@@ -70,4 +71,15 @@ public class DLSiteTests
         var results = await scrapper.ScrapSearchPage(term, default, 100, language);
         Assert.NotEmpty(results);
     }
+
+
+    [Theory]
+    [InlineData("https://www.dlsite.com/pro/work/=/product_id/VJ009290.html")]
+    public async Task ShouldGetScrapperResult(string url)
+    {
+        var scrapper = new Scrapper(new XunitLogger<Scrapper>(_testOutputHelper), new HttpClientHandler());
+        var results = await scrapper.ScrapGamePage(url, CancellationToken.None);
+        Assert.NotNull(results);
+    }
+
 }
