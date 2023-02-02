@@ -176,12 +176,10 @@ def main():
         plugin_path = src_path.joinpath(plugin)
         validate_path(plugin_path)
 
-        build_output_path = get_build_output_path(plugin_path)
-
         if mode == 'copy':
-            copy_plugin(plugin, build_output_path)
+            copy_plugin(plugin, get_build_output_path(plugin_path))
         elif mode == 'pack':
-            pack_plugin(plugin, build_output_path)
+            pack_plugin(plugin, get_build_output_path(plugin_path))
         elif mode == 'update':
             update_plugin_manifest(plugin, src_path, new_version)
             update_installer_manifest(plugin, manifests_dir, new_version, playnite_version)
