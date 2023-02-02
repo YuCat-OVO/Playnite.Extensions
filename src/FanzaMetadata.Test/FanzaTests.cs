@@ -176,9 +176,10 @@ public class FanzaTests
 
 
     [Fact]
-    public async void Dd()
+    public async void ShouldGetSearchResult2()
     {
-        var dd = "https://review.dmm.com/web/images/pc/45.gif";
-        _testOutputHelper.WriteLine(dd.Substring(dd.LastIndexOf("/", StringComparison.Ordinal) + 1).Replace(".gif", ""));
+        var scrapper = new FanzaGameScrapper(new XunitLogger<FanzaGameScrapper>(_testOutputHelper));
+        var res = await scrapper.ScrapSearchPage("もっと！孕ませ！炎のおっぱい異世界 おっぱいメイド学園！");
+        Assert.NotEmpty(res);
     }
 }

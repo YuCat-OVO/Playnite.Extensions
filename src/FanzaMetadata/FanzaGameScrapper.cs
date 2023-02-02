@@ -82,11 +82,15 @@ public class FanzaGameScrapper : IScrapper
         document = await context.OpenAsync(monoSearchUrl, cancellationToken);
 
         return document.QuerySelectorAll("#list li")
+            .Where(element =>
+            {
+                var aElement = (IHtmlAnchorElement)element.QuerySelectorAll(".tmb a").First();
+                return aElement.Href.Contains("/mono/pcgame");
+            })
             .Select(element =>
             {
                 var aElement = (IHtmlAnchorElement)element.QuerySelectorAll(".tmb a").First();
                 var title = aElement.QuerySelectorAll("img").First().GetAttribute("alt") + "";
-
                 var id = new Uri(aElement.Href).Segments
                     .Where(x => x.StartsWith("cid="))
                     .Select(x => x.ReplaceFirst("cid=", "").Replace("/", ""))
@@ -111,7 +115,7 @@ public class FanzaGameScrapper : IScrapper
         var document = await context.OpenAsync(link, cancellationToken);
         if (document.StatusCode == HttpStatusCode.NotFound) return null;
 
-        var result = new ScrapperResult()
+        var result = new ScrapperResult
         {
             Link = link
         };
@@ -177,13 +181,12 @@ public class FanzaGameScrapper : IScrapper
                     v => v.LastElementChild);
 
             result.Circle = productDetailDict["ブランド"]?.Text().Trim();
-
             result.PreviewImages = document.QuerySelectorAll("#sample-image-block a img")
                 .Cast<IHtmlImageElement>()
                 .Select(x => x.Source ?? "")
                 .Where(x => !string.IsNullOrEmpty(x))
+                .Select(x => x.ReplaceFirst("js-", "jp-"))
                 .ToList();
-
 
             result.Description = document.QuerySelector("div.page-detail div.mg-b20.lh4 p.mg-b20")?.OuterHtml.Trim();
 
@@ -220,8 +223,9 @@ public class FanzaGameScrapper : IScrapper
             var tags = productDetailDict["関連タグ"]?.QuerySelectorAll("li a")
                 .Select(x => x.Text().Replace("#", "").Trim()).ToList();
             result.Genres = tags;
-            result.IconUrl = string.Format("https://pics.dmm.co.jp/mono/game/{0}/{0}pl.jpg", id);
+            result.coverUrl = string.Format("https://pics.dmm.co.jp/mono/game/{0}/{0}pl.jpg", id);
         }
+
         return result;
     }
 

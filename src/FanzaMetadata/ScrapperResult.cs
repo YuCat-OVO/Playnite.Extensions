@@ -29,6 +29,8 @@ public class ScrapperResult
     public string? Description { get; set; }
 
     public bool? Adult { get; set; }
+
+    public string? coverUrl { get; set; }
 }
 
 [DebuggerDisplay("{Name} ({Id})")]
