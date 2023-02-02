@@ -95,6 +95,8 @@ def pack_plugin(plugin: str, build_output_path: Path):
     with zipfile.ZipFile(zip_output_path, 'w', zipfile.ZIP_DEFLATED) as myzip:
         for root, dirs, files in os.walk(build_output_path):
             for file in files:
+                if file == "Playnite.SDK.dll":
+                    continue                
                 myzip.write(os.path.join(root, file), file)
 
 
