@@ -1,10 +1,10 @@
-﻿Id: DLSiteMetadata
-Name: DLsite Metadata Provider
 Author: erri120
-Version: 2.0.0
-Module: DLSiteMetadata.dll
-Type: MetadataProvider
 Icon: icon.png
+Id: DLSiteMetadata
 Links:
-    - Name: GitHub
-      Url: https://github.com/erri120/Playnite.Extensions
+- Name: GitHub
+  Url: https://github.com/erri120/Playnite.Extensions
+Module: DLSiteMetadata.dll
+Name: DLsite Metadata Provider
+Type: MetadataProvider
+Version: 2.5.6

@@ -290,6 +290,10 @@ public class FanzaMetadataProvider : OnDemandMetadataProvider
     public override MetadataFile? GetCoverImage(GetMetadataFieldArgs args)
     {
         var res = GetResult(args);
+        if (res?.coverUrl != null)
+        {
+            return new MetadataFile(res.coverUrl);
+        }
         return SelectImage(args, "Select Cover Image");
     }
 

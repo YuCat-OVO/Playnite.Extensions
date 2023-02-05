@@ -36,6 +36,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Generic", "Generic", "{211A
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameManagement", "GameManagement\GameManagement.csproj", "{7F458525-91BD-45C6-BB6A-66434B7D8EC4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GetchuMetadata", "GetchuMetadata\GetchuMetadata.csproj", "{872692A7-9C78-4985-801D-5BE53E4BE9F7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GetchuMetadata.Test", "GetchuMetadata.Test\GetchuMetadata.Test.csproj", "{AF02BD53-E942-4708-AE60-305819643A03}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -78,6 +82,14 @@ Global
 		{7F458525-91BD-45C6-BB6A-66434B7D8EC4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7F458525-91BD-45C6-BB6A-66434B7D8EC4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7F458525-91BD-45C6-BB6A-66434B7D8EC4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{872692A7-9C78-4985-801D-5BE53E4BE9F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{872692A7-9C78-4985-801D-5BE53E4BE9F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{872692A7-9C78-4985-801D-5BE53E4BE9F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{872692A7-9C78-4985-801D-5BE53E4BE9F7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AF02BD53-E942-4708-AE60-305819643A03}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AF02BD53-E942-4708-AE60-305819643A03}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AF02BD53-E942-4708-AE60-305819643A03}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AF02BD53-E942-4708-AE60-305819643A03}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{AA0C3ED0-7CE2-44FE-A158-110A14B5DDC6} = {43D0787B-36A2-455F-B7C6-FC05395BB1CD}

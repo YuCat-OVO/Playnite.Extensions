@@ -174,12 +174,23 @@ public class FanzaTests
         Assert.NotNull(var0);
     }
 
+    [Fact]
+    public async void ManagerShouldGetScrapperResultFromUrl2()
+    {
+        var s0 = new FanzaGameScrapper(new XunitLogger<FanzaGameScrapper>(_testOutputHelper));
+        var s1 = new DoujinGameScrapper(new XunitLogger<DoujinGameScrapper>(_testOutputHelper));
+        var manager = new FanzaMetadataProvider.ScrapperManager(new List<IScrapper>() { s0, s1 });
+        var var0 = await manager.ScrapGamePage("https://www.dmm.co.jp/mono/pcgame/-/detail/=/cid=1578apc14049_t/?i3_ref=search&i3_ord=1",
+            CancellationToken.None);
+        Assert.NotNull(var0);
+    }
+
 
     [Fact]
     public async void ShouldGetSearchResult2()
     {
         var scrapper = new FanzaGameScrapper(new XunitLogger<FanzaGameScrapper>(_testOutputHelper));
-        var res = await scrapper.ScrapSearchPage("もっと！孕ませ！炎のおっぱい異世界 おっぱいメイド学園！");
+        var res = await scrapper.ScrapSearchPage("ネコと女子寮せよ！");
         Assert.NotEmpty(res);
     }
 }

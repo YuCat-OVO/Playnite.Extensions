@@ -205,24 +205,41 @@ public class FanzaGameScrapper : IScrapper
 
                     var dd = str.Substring(idx + 1).Replace(".gif", "");
                     return dd.ToDouble();
-                }).First(x => x > 0) ?? 0D;
+                })
+                .FirstOrDefault(x => x > 0) ?? 0D;
             result.Rating = rating / 10D;
 
             var r18NavigationBarLength = document.GetElementsByClassName("_n4v1-link-r18-name").Length;
             result.Adult = r18NavigationBarLength <= 0;
 
-            var dateStr = productDetailDict["発売日"]?.Text().Trim();
-            if (DateTime.TryParseExact(dateStr, "yyyy/MM/dd", null, DateTimeStyles.None, out var releaseDate))
+            if (productDetailDict.ContainsKey("発売日"))
             {
-                result.ReleaseDate = releaseDate;
+                var dateStr = productDetailDict["発売日"]?.Text().Trim();
+                if (DateTime.TryParseExact(dateStr, "yyyy/MM/dd", null, DateTimeStyles.None, out var releaseDate))
+                {
+                    result.ReleaseDate = releaseDate;
+                }
             }
 
-            result.GameGenre = productDetailDict["ゲームジャンル"]?.Text().Trim();
-            result.Series = productDetailDict["シリーズ"]?.Text().Trim();
 
-            var tags = productDetailDict["関連タグ"]?.QuerySelectorAll("li a")
-                .Select(x => x.Text().Replace("#", "").Trim()).ToList();
-            result.Genres = tags;
+            if (productDetailDict.ContainsKey("ゲームジャンル"))
+            {
+                result.GameGenre = productDetailDict["ゲームジャンル"]?.Text().Trim();
+            }
+
+            if (productDetailDict.ContainsKey("シリーズ"))
+            {
+                result.Series = productDetailDict["シリーズ"]?.Text().Trim();
+            }
+
+
+            if (productDetailDict.ContainsKey("関連タグ"))
+            {
+                var tags = productDetailDict["関連タグ"]?.QuerySelectorAll("li a")
+                    .Select(x => x.Text().Replace("#", "").Trim()).ToList();
+                result.Genres = tags;
+            }
+
             result.coverUrl = string.Format("https://pics.dmm.co.jp/mono/game/{0}/{0}pl.jpg", id);
         }
 

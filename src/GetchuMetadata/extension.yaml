@@ -1,10 +1,10 @@
 Author: erri120
 Icon: icon.png
-Id: F95ZoneMetadata
+Id: GetchuMetadata
 Links:
 - Name: GitHub
   Url: https://github.com/erri120/Playnite.Extensions
-Module: F95ZoneMetadata.dll
-Name: F95zone Metadata Provider
+Module: GetchuMetadata.dll
+Name: Getchu Metadata Provider
 Type: MetadataProvider
 Version: 2.5.6

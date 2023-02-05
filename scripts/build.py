@@ -17,6 +17,7 @@ plugins = [
     'F95ZoneMetadata',
     'DLSiteMetadata',
     'FanzaMetadata',
+    'GetchuMetadata',
     'GameManagement'
 ]
 
