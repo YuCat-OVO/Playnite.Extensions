@@ -6,11 +6,12 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Net;
-using System.Text.RegularExpressions;
 using AngleSharp;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
+using AngleSharp.Text;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace GetchuMetadata;
 
@@ -19,25 +20,12 @@ public class Scrapper
     public const string DefaultLanguage = "en_US";
 
     public const string SiteBaseUrl = "https://getchu.com/";
-    public const string ProductBaseUrl = SiteBaseUrl + "soft.phtml?id=";
 
     public const string SearchFormatUrl = SiteBaseUrl +
                                           "php/nsearch.phtml?search_keyword={0}&list_count={1}&sort=sales&sort2=down&genre=pc_soft&list_type=list&search=search";
 
-    private static readonly Regex _imageLinkRegex =
-        new Regex(@"(https?://[a-zA-Z0-9\.\?/%-_]*).(jpg|jpeg|png)", RegexOptions.Compiled);
-
     private readonly ILogger<Scrapper> _logger;
     private readonly IConfiguration _configuration;
-
-    public Scrapper(ILogger<Scrapper> logger, HttpMessageHandler messageHandler)
-    {
-        _logger = logger;
-
-        _configuration = Configuration.Default
-            .WithRequesters(messageHandler)
-            .WithDefaultLoader();
-    }
 
     public Scrapper(ILogger<Scrapper> logger)
     {
@@ -48,7 +36,6 @@ public class Scrapper
         cookieContainer.Add(new Cookie("getchu_adalt_flag", "getchu.com", "/", "www.getchu.com")
         {
             Expires = DateTime.Now + TimeSpan.FromDays(30),
-            HttpOnly = true
         });
 
         clientHandler.CookieContainer = cookieContainer;
@@ -56,13 +43,18 @@ public class Scrapper
         clientHandler.UseCookies = true;
     }
 
-    public async Task<ScrapperResult?> ScrapGamePage(string url, CancellationToken cancellationToken = default,
-        string language = DefaultLanguage)
+    public async Task<ScrapperResult?> ScrapGamePage(string url, CancellationToken cancellationToken = default)
     {
+        if (!url.StartsWith("https://www."))
+        {
+            url = url.ReplaceFirst("https://", "https://www.");
+        }
+
         var uri = new Uri(url);
         var id = uri.Query.Replace("?id=", "");
         if (string.IsNullOrEmpty(id))
         {
+            _logger.Log(LogLevel.Information, "no id found {url}", url);
             return null;
         }
 
@@ -73,14 +65,21 @@ public class Scrapper
 
 
         var context = BrowsingContext.New(_configuration);
+        // var request = new DocumentRequest(new Url(url));
+        // request.Headers["Cookie"] = "getchu_adalt_flag=getchu.com;";
+        // var document = await context.OpenAsync(request, cancellationToken);
         var document = await context.OpenAsync(url, cancellationToken);
-        if (document.StatusCode == HttpStatusCode.NotFound) return null;
+        if (document.StatusCode == HttpStatusCode.NotFound || document.BaseUri.StartsWith("https://www.getchu.com/php/attestation.html"))
+        {
+            return null;
+        }
+
 
         // Title
         var titleElement = document.GetElementById("soft-title");
         res.Title = titleElement?.FirstChild?.Text().Trim();
 
-        var productDetailDir= document.QuerySelectorAll("#soft_table tbody tr:nth-child(2) tr td:nth-child(1)")
+        var productDetailDir = document.QuerySelectorAll("#soft_table tbody tr:nth-child(2) tr td:nth-child(1)")
             .ToDictionary(x => x.Text().Replace("：", "").Trim(),
                 ele => ele.NextElementSibling?.NextElementSibling ?? ele.NextElementSibling
             );
@@ -97,7 +96,8 @@ public class Scrapper
         var dataName = "発売日";
         if (productDetailDir.ContainsKey(dataName))
         {
-            if (DateTime.TryParseExact(productDetailDir[dataName]?.FirstElementChild?.Text(), "yyyy/MM/dd", null, DateTimeStyles.None,
+            if (DateTime.TryParseExact(productDetailDir[dataName]?.FirstElementChild?.Text(), "yyyy/MM/dd", null,
+                    DateTimeStyles.None,
                     out var releaseDate))
             {
                 res.DateReleased = releaseDate;
@@ -148,7 +148,7 @@ public class Scrapper
                 str = str.Trim();
                 res.Categories = new List<string>(
                     str.Split('、')
-                );
+                ).Where(x => !string.IsNullOrEmpty(x)).ToList();
             }
         }
 
@@ -162,7 +162,8 @@ public class Scrapper
                 str = str.Trim();
                 res.Genres = new List<string>(
                     str.Split('、')
-                );
+                ).Where(x => !string.IsNullOrEmpty(x)).ToList();
+                ;
             }
         }
 
@@ -175,11 +176,7 @@ public class Scrapper
             .Select(ele => ele.Href)
             .ToList();
 
-        // res.DescriptionHtml = descriptionHtml;
-        // res.SeriesNames = dataElement.Text().CustomTrim();
-        // res.ScenarioWriters
-        // res.VoiceActors
-        // res.MusicCreators
+        _logger.Log(LogLevel.Information, "Getchu result:{res}", JsonConvert.SerializeObject(res));
         return res;
     }
 
@@ -196,6 +193,12 @@ public class Scrapper
             .Cast<IHtmlAnchorElement>()
             .Select(ele =>
             {
+                // var link = ele.Href;
+                // _logger.Log(LogLevel.Information, "link {link}", link);
+                // if (!link.StartsWith("https://www."))
+                // {
+                //     link = link.ReplaceFirst("https://", "https://www.");
+                // }
                 var searchResult = new SearchResult(ele.Text(), ele.Href);
                 return searchResult;
             }).ToList();

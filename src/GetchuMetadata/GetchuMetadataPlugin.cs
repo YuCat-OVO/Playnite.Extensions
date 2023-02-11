@@ -35,7 +35,7 @@ public class GetchuMetadataPlugin : MetadataPlugin
         MetadataField.ReleaseDate,
         MetadataField.Series,
         MetadataField.Description,
-        MetadataField.Region
+        MetadataField.Region,
     };
 
     public GetchuMetadataPlugin(IPlayniteAPI playniteAPI) : base(playniteAPI)
