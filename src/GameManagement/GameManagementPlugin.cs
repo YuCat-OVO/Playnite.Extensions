@@ -161,12 +161,12 @@ public class GameManagementPlugin : GenericPlugin
             {
                 Text = "💻",
                 FontSize = 22,
-            };
-        Visible = true,
+            },
             Opened = () => new StorageStatisticsView
             {
                 DataContext = _storageInfo
-            }
+            },
+            Visible = true,
         };
-}
+    }
 }
