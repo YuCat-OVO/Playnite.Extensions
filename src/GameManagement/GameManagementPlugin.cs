@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -157,11 +157,16 @@ public class GameManagementPlugin : GenericPlugin
         {
             Title = "View Storage Statistics",
             Type = SiderbarItemType.View,
-            Visible = true,
+            Icon = new TextBlock
+            {
+                Text = "💻",
+                FontSize = 22,
+            };
+        Visible = true,
             Opened = () => new StorageStatisticsView
             {
                 DataContext = _storageInfo
             }
         };
-    }
+}
 }
