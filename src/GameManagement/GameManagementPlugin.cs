@@ -110,7 +110,15 @@ public class GameManagementPlugin : GenericPlugin
                     continue;
                 }
 
-                Directory.Delete(game.InstallDirectory, true);
+                try
+                {
+                    _logger.LogDebug("Removing {Directory}", game.InstallDirectory);
+                    Directory.Delete(game.InstallDirectory, true);
+                }
+                catch (IOException)
+                {
+                    _logger.LogError("The directory {Directory} could not be deleted.", game.InstallDirectory);
+                }
                 game.IsInstalled = false;
                 actuallyUninstalledGames.Add(game);
                 _storageInfo.RemoveStorageInfo(game);
