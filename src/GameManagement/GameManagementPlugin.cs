@@ -118,7 +118,7 @@ public class GameManagementPlugin : GenericPlugin
                     _logger.LogError("Directory {Name} is not exists!", game.InstallDirectory);
                     gameIsInstalled = false;
                 }
-                if (gameIsInstalled) continue;
+                if (!gameIsInstalled) continue;
 
                 try
                 {
