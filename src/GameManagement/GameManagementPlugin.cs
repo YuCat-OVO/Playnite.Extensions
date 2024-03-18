@@ -102,6 +102,12 @@ public class GameManagementPlugin : GenericPlugin
                 progressArgs.CurrentProgressValue += 1;
                 progressArgs.Text = $"Uninstalling {game.Name}";
 
+                var gameInstallDirectory = gams.InstallDirectory;
+                if (gameInstallDirectory.Contains("{PlayniteDir}"))
+                {
+                    gameInstallDirectory.Replace("{PlayniteDir}", Paths.ProgramFolder);
+                }
+
                 var gameIsInstalled = true;
                 if (game.InstallationStatus != InstallationStatus.Installed)
                 {
@@ -113,21 +119,21 @@ public class GameManagementPlugin : GenericPlugin
                     _logger.LogError("Directory {Name} is Null or whitespace!", game.InstallDirectory);
                     gameIsInstalled = false;
                 }
-                if (!Directory.Exists(game.InstallDirectory))
+                if (!Directory.Exists(gameInstallDirectory))
                 {
-                    _logger.LogError("Directory {Name} is not exists!", game.InstallDirectory);
+                    _logger.LogError("Directory {Name} is not exists!", gameInstallDirectory);
                     gameIsInstalled = false;
                 }
                 if (!gameIsInstalled) continue;
 
                 try
                 {
-                    _logger.LogDebug("Removing {Directory}", game.InstallDirectory);
-                    Directory.Delete(game.InstallDirectory, true);
+                    _logger.LogDebug("Removing {Directory}", gameInstallDirectory);
+                    Directory.Delete(gameInstallDirectory, true);
                 }
                 catch (IOException)
                 {
-                    _logger.LogError("The directory {Directory} could not be deleted.", game.InstallDirectory);
+                    _logger.LogError("The directory {Directory} could not be deleted.", gameInstallDirectory);
                 }
                 game.IsInstalled = false;
                 actuallyUninstalledGames.Add(game);
