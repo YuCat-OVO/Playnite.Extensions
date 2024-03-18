@@ -105,9 +105,12 @@ public class GameManagementPlugin : GenericPlugin
                 var gameInstallDirectory = game.InstallDirectory;
                 if (gameInstallDirectory.Contains("{PlayniteDir}"))
                 {
-                    gameInstallDirectory.Replace("{PlayniteDir}", Paths.ProgramFolder);
+                    _logger.LogDebug("Game install directory contains {PlayniteDir}");
+                    gameInstallDirectory = gameInstallDirectory.Replace("{PlayniteDir}", _playniteAPI.Paths.ApplicationPath);
                 }
                 else gameInstallDirectory = game.InstallDirectory;
+
+                _logger.LogDebug("gameInstallDirectory: {gameInstallDirectory}", gameInstallDirectory);
 
                 var gameIsInstalled = true;
                 if (game.InstallationStatus != InstallationStatus.Installed)
