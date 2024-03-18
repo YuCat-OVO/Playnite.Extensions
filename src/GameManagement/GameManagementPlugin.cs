@@ -102,13 +102,23 @@ public class GameManagementPlugin : GenericPlugin
                 progressArgs.CurrentProgressValue += 1;
                 progressArgs.Text = $"Uninstalling {game.Name}";
 
-                if (game.InstallationStatus != InstallationStatus.Installed
-                    || string.IsNullOrWhiteSpace(game.InstallDirectory)
-                    || !Directory.Exists(game.InstallDirectory))
+                var gameIsInstalled = true;
+                if (game.InstallationStatus != InstallationStatus.Installed)
                 {
                     _logger.LogError("Game {Name} is not installed!", game.Name);
-                    continue;
+                    gameIsInstalled = false;
                 }
+                if (string.IsNullOrWhiteSpace(game.InstallDirectory))
+                {
+                    _logger.LogError("Directory {Name} is Null or whitespace!", game.InstallDirectory);
+                    gameIsInstalled = false;
+                }
+                if (!Directory.Exists(game.InstallDirectory))
+                {
+                    _logger.LogError("Directory {Name} is not exists!", game.InstallDirectory);
+                    gameIsInstalled = false;
+                }
+                if (gameIsInstalled) continue;
 
                 try
                 {
