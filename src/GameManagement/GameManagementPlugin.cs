@@ -105,7 +105,7 @@ public class GameManagementPlugin : GenericPlugin
                 var gameInstallDirectory = game.InstallDirectory;
                 if (gameInstallDirectory.Contains("{PlayniteDir}"))
                 {
-                    gameInstallDirectory.Replace("{PlayniteDir}", Paths.ProgramFolder);
+                    gameInstallDirectory.Replace("{PlayniteDir}", _playniteAPI.Paths.ProgramFolder);
                 }
                 else gameInstallDirectory = game.InstallDirectory;
 
@@ -115,7 +115,7 @@ public class GameManagementPlugin : GenericPlugin
                     _logger.LogError("Game {Name} is not installed!", game.Name);
                     gameIsInstalled = false;
                 }
-                if (string.IsNullOrWhiteSpace(game.InstallDirectory))
+                if (string.IsNullOrWhiteSpace(gameInstallDirectory))
                 {
                     _logger.LogError("Directory {Name} is Null or whitespace!", gameInstallDirectory);
                     gameIsInstalled = false;
