@@ -102,11 +102,12 @@ public class GameManagementPlugin : GenericPlugin
                 progressArgs.CurrentProgressValue += 1;
                 progressArgs.Text = $"Uninstalling {game.Name}";
 
-                var gameInstallDirectory = gams.InstallDirectory;
+                var gameInstallDirectory = game.InstallDirectory;
                 if (gameInstallDirectory.Contains("{PlayniteDir}"))
                 {
                     gameInstallDirectory.Replace("{PlayniteDir}", Paths.ProgramFolder);
                 }
+                else gameInstallDirectory = game.InstallDirectory;
 
                 var gameIsInstalled = true;
                 if (game.InstallationStatus != InstallationStatus.Installed)
@@ -114,9 +115,9 @@ public class GameManagementPlugin : GenericPlugin
                     _logger.LogError("Game {Name} is not installed!", game.Name);
                     gameIsInstalled = false;
                 }
-                if (string.IsNullOrWhiteSpace(game.InstallDirectory))
+                if (string.IsNullOrWhiteSpace(gameInstallDirectory))
                 {
-                    _logger.LogError("Directory {Name} is Null or whitespace!", game.InstallDirectory);
+                    _logger.LogError("Directory {Name} is Null or whitespace!", gameInstallDirectory);
                     gameIsInstalled = false;
                 }
                 if (!Directory.Exists(gameInstallDirectory))
