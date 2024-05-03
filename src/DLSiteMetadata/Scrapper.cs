@@ -238,13 +238,7 @@ public class Scrapper
                                    headerName.Equals("年齡指定", StringComparison.OrdinalIgnoreCase) ||
                                    headerName.Equals("연령 지정", StringComparison.OrdinalIgnoreCase))
                         {
-                            // res.Age = sAge switch
-                            // {
-                            //     "18+" or "18禁" => DLSiteAge.Adult,
-                            //     "R-15" => DLSiteAge.RatedR,
-                            //     "All ages" or "全年齢" => DLSiteAge.AllAges,
-                            //     _ => DLSiteAge.Unknown
-                            // };
+                            res.AgeRating = dataElement.QuerySelector(".work_genre span")?.Text().Trim();
                         } else if (headerName.Equals("Product format", StringComparison.OrdinalIgnoreCase) ||
                                    headerName.Equals("作品形式", StringComparison.OrdinalIgnoreCase) ||
                                    headerName.Equals("作品类型", StringComparison.OrdinalIgnoreCase) ||
@@ -310,8 +304,8 @@ public class Scrapper
             var mainImage = res.ProductImages.FirstOrDefault(x => x.Contains("_img_main."));
             if (mainImage is not null)
             {
-                var iconImage = mainImage.Replace("_img_main.", "_img_sam_mini.");
-                res.Icon = iconImage;
+                res.Cover = mainImage;
+                res.Icon = mainImage.Replace("_img_main.", "_img_sam_mini.");;
             }
         }
 

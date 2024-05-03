@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -11,6 +12,7 @@ using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using AngleSharp.Text;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace FanzaMetadata;
 
@@ -130,23 +132,29 @@ public class FanzaGameScrapper : IScrapper
             result.PreviewImages = document.GetElementsByClassName("image-slider").Children("li").Children("img")
                 .Cast<IHtmlImageElement>().Select(x => x.Source ?? "").Where(x => !string.IsNullOrEmpty(x)).ToList();
 
+            var rating = document.QuerySelectorAll("script[type='application/ld+json']")
+                .Select(x =>
+                    JsonSerializer.Create()
+                        .Deserialize<Product>(new JsonTextReader(new StringReader(x.Text()))))
+                .Where(x => x?.Type?.Equals("Product") == true)
+                .Select(x => x.AggregateRating?.RatingValue)
+                .First()?.ToDouble();
+            if (rating != null)
+            {
+                result.Rating = rating.Value;
+            }
+
             // const string ratingPrefix = "d-rating-";
             // result.Rating = document.QuerySelector(".review div")!.ClassList
             //     .Where(className => className.StartsWith(ratingPrefix))
             //     .Select(className => className.Replace(ratingPrefix, ""))
             //     .Select(rating => double.Parse(rating) / 10D).First();
 
-            result.Description = document.QuerySelector(".read-text-area p.text-overflow")?.OuterHtml.Trim();
+            result.Description = document.GetElementById("detailGuide")?.OuterHtml.Trim();
 
             var r18NavigationBarLength = document.GetElementsByClassName("_n4v1-link-r18-name").Length;
             result.Adult = r18NavigationBarLength <= 0;
 
-            // <tr>
-            //  <td class="type-left">ダウンロード版対応OS</td>
-            //  <td class="type-center">：</td>
-            //  <td class="type-right"></td>
-            // </tr>
-            // key is type-left class text, value is type-right class element
             var detailBottom = document.QuerySelectorAll(".contentsDetailBottom__tableRow")
                 .GroupBy(x => x.Children.First().Text().Trim())
                 .ToDictionary(x => x.Key, x => x.First().Children.Last());
@@ -170,10 +178,33 @@ public class FanzaGameScrapper : IScrapper
                 result.Series = series;
             }
 
-            var tags = detailBottom["ジャンル"]?.GetElementsByTagName("a").Select(x => x.Text().Trim()).ToList();
+            var tags = detailBottom["ジャンル"]?.GetElementsByTagName("a")
+                .Select(x => x.Text().Trim())
+                .ToList();
             result.Genres = tags;
 
-            result.IconUrl = string.Format(PosterUrlPattern, id);
+            result.CoverUrl = string.Format(PosterUrlPattern, id);
+
+            if (detailBottom.ContainsKey("原画"))
+            {
+                result.Illustrators = detailBottom["原画"]
+                    .QuerySelectorAll("li a")
+                    .Select(x => x.Text().Trim()).ToList();
+            }
+
+            if (detailBottom.ContainsKey("シナリオ"))
+            {
+                result.ScenarioWriters = detailBottom["シナリオ"]
+                    .QuerySelectorAll("li a")
+                    .Select(x => x.Text().Trim()).ToList();
+            }
+
+            if (detailBottom.ContainsKey("声優"))
+            {
+                result.VoiceActors = detailBottom["声優"]
+                    .QuerySelectorAll("li")
+                    .Select(x => x.Text().Trim()).ToList();
+            }
         }
         else
         {
@@ -193,7 +224,7 @@ public class FanzaGameScrapper : IScrapper
             result.Circle = productDetailDict["ブランド"]?.Text().Trim();
             result.PreviewImages = document.QuerySelectorAll("#sample-image-block a img")
                 .Cast<IHtmlImageElement>()
-                .Select(x => x.Source ?? "")
+                .Select(x => x.GetAttribute("data-lazy") ?? "")
                 .Where(x => !string.IsNullOrEmpty(x))
                 .Select(x => x.ReplaceFirst("js-", "jp-"))
                 .ToList();
@@ -250,7 +281,28 @@ public class FanzaGameScrapper : IScrapper
                 result.Genres = tags;
             }
 
-            result.coverUrl = string.Format("https://pics.dmm.co.jp/mono/game/{0}/{0}pl.jpg", id);
+            result.CoverUrl = string.Format("https://pics.dmm.co.jp/mono/game/{0}/{0}pl.jpg", id);
+
+            if (productDetailDict.ContainsKey("原画"))
+            {
+                result.Illustrators = productDetailDict["原画"]
+                    .QuerySelectorAll("td a")
+                    .Select(x => x.Text().Trim()).ToList();
+            }
+
+            if (productDetailDict.ContainsKey("シナリオ"))
+            {
+                result.ScenarioWriters = productDetailDict["シナリオ"]
+                    .QuerySelectorAll("td a")
+                    .Select(x => x.Text().Trim()).ToList();
+            }
+
+            // if (productDetailDict.ContainsKey("ボイス"))
+            // {
+            //     result.VoiceActors = productDetailDict["ボイス"]
+            //         .QuerySelectorAll("td")
+            //         .Select(x => x.Text().Trim()).ToList();
+            // }
         }
 
         return result;
@@ -269,5 +321,21 @@ public class FanzaGameScrapper : IScrapper
                 || link.StartsWith(BaseMonoGamePageUrl, StringComparison.OrdinalIgnoreCase)
             )
             .Select(ParseLinkId).Where(x => !string.IsNullOrEmpty(x)).FirstOrDefault();
+    }
+
+    private class Product
+    {
+        [JsonProperty("@type")]
+        public string? Type { get; set; }
+        [JsonProperty("aggregateRating")]
+        public AggregateRating? AggregateRating { get; set; }
+    }
+
+    private class AggregateRating
+    {
+        [JsonProperty("@type")]
+        public string? Type { get; set; }
+        [JsonProperty("ratingValue")]
+        public string? RatingValue { get; set; }
     }
 }

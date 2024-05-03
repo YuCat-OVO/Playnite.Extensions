@@ -87,8 +87,8 @@ public class FanzaTests
     public async void ShouldGetScrapperResult()
     {
         var scrapper = new FanzaGameScrapper(new XunitLogger<FanzaGameScrapper>(_testOutputHelper));
-        var res = await scrapper.ScrapGamePage(new SearchResult("美少女万華鏡 呪われし伝説の少女", "views_0669",
-            "https://dlsoft.dmm.co.jp/detail/views_0669/"));
+        var res = await scrapper.ScrapGamePage(new SearchResult("美少女万華鏡異聞 雪おんな", "views_0778",
+            "https://dlsoft.dmm.co.jp/detail/views_0778/"));
         Assert.NotNull(res);
         Assert.NotNull(res?.Title);
         Assert.NotNull(res?.Genres);

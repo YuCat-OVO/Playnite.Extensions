@@ -26,7 +26,7 @@ public class FanzaMetadataPlugin : MetadataPlugin
         MetadataField.Developers,
         MetadataField.Features,
         MetadataField.Genres,
-        MetadataField.Icon,
+        // MetadataField.Icon,
         MetadataField.Links,
         MetadataField.Name,
         MetadataField.Series,

@@ -30,7 +30,11 @@ public class ScrapperResult
 
     public bool? Adult { get; set; }
 
-    public string? coverUrl { get; set; }
+    public string? CoverUrl { get; set; }
+
+    public List<string>? ScenarioWriters { get; set; }
+    public List<string>? Illustrators { get; set; }
+    public List<string>? VoiceActors { get; set; }
 }
 
 [DebuggerDisplay("{Name} ({Id})")]
