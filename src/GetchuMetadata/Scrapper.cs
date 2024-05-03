@@ -6,6 +6,8 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Net;
+using System.Text;
+using System.Web;
 using AngleSharp;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
@@ -185,7 +187,7 @@ public class Scrapper
     {
         var context = BrowsingContext.New(_configuration);
 
-        var url = string.Format(SearchFormatUrl, term, maxResults);
+        var url = string.Format(SearchFormatUrl, HttpUtility.UrlEncode(term, Encoding.GetEncoding("euc-jp")), maxResults);
         var document = await context.OpenAsync(url, cancellationToken);
 
 
@@ -193,12 +195,6 @@ public class Scrapper
             .Cast<IHtmlAnchorElement>()
             .Select(ele =>
             {
-                // var link = ele.Href;
-                // _logger.Log(LogLevel.Information, "link {link}", link);
-                // if (!link.StartsWith("https://www."))
-                // {
-                //     link = link.ReplaceFirst("https://", "https://www.");
-                // }
                 var searchResult = new SearchResult(ele.Text(), ele.Href);
                 return searchResult;
             }).ToList();

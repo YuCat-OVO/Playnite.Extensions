@@ -18,7 +18,7 @@ public class GetchuTests
     public async void ShouldGetSearchResult()
     {
         var scrapper = new Scrapper(new XunitLogger<Scrapper>(_testOutputHelper));
-        var res = await scrapper.ScrapSearchPage("BALDRSKY ZERO");
+        var res = await scrapper.ScrapSearchPage("恋する乙女と守護の楯");
         Assert.NotEmpty(res);
     }
 
