@@ -37,7 +37,8 @@ public class DLSiteMetadataPlugin : MetadataPlugin
         MetadataField.Description,
         MetadataField.Region,
         MetadataField.AgeRating,
-        MetadataField.CommunityScore
+        MetadataField.CommunityScore,
+        MetadataField.Publishers,
     };
 
     public DLSiteMetadataPlugin(IPlayniteAPI playniteAPI) : base(playniteAPI)

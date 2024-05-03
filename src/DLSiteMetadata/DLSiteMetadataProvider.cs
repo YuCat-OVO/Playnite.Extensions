@@ -205,6 +205,7 @@ public class DLSiteMetadataProvider : OnDemandMetadataProvider
         {
             return new MetadataFile(cover);
         }
+
         return cover is null ? base.GetCoverImage(args) : SelectImage(args, "Select Cover Image");
     }
 
@@ -272,11 +273,12 @@ public class DLSiteMetadataProvider : OnDemandMetadataProvider
         return new[] { property };
     }
 
-    public override MetadataFile GetIcon(GetMetadataFieldArgs args)
-    {
-        var icon = GetResult(args)?.Icon;
-        return icon is null ? base.GetIcon(args) : new MetadataFile(icon);
-    }
+    // public override MetadataFile GetIcon(GetMetadataFieldArgs args)
+    // {
+    //     var icon = GetResult(args)?.Icon;
+    //     var current = base.GetIcon(args);
+    //     return current ?? new MetadataFile(icon);
+    // }
 
     public override IEnumerable<MetadataProperty> GetPublishers(GetMetadataFieldArgs args)
     {
@@ -306,5 +308,4 @@ public class DLSiteMetadataProvider : OnDemandMetadataProvider
     {
         return new[] { new MetadataNameProperty("Japan") };
     }
-
 }

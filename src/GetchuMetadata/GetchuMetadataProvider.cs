@@ -141,10 +141,6 @@ public class GetchuMetadataProvider : OnDemandMetadataProvider
         if (result is null) return base.GetDevelopers(args);
 
         var staff = new List<string>();
-        if (result.Maker is not null)
-        {
-            staff.Add(result.Maker);
-        }
 
         if (result.Illustrators is not null && _settings.IncludeIllustrators)
         {
@@ -165,6 +161,8 @@ public class GetchuMetadataProvider : OnDemandMetadataProvider
 
         return developers;
     }
+
+
 
     public override IEnumerable<Link> GetLinks(GetMetadataFieldArgs args)
     {
@@ -320,7 +318,7 @@ public class GetchuMetadataProvider : OnDemandMetadataProvider
 
     public override IEnumerable<MetadataProperty> GetPublishers(GetMetadataFieldArgs args)
     {
-        return new[] { new MetadataNameProperty("Getchu") };
+        return new[] { new MetadataNameProperty(GetResult(args)?.Maker) };
     }
 
     public override string GetDescription(GetMetadataFieldArgs args)
