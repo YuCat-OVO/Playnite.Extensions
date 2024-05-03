@@ -304,7 +304,17 @@ public class FanzaMetadataProvider : OnDemandMetadataProvider
 
         if (IsBackgroundDownload)
         {
-            return new MetadataFile(images.First());
+            if (images.Count == 1)
+            {
+                return new MetadataFile(images.First());
+            }
+
+            if (images.Count > 1)
+            {
+                return new MetadataFile(images[1]);
+            }
+
+            return null;
         }
 
         var imageFileOption =

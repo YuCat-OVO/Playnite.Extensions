@@ -190,7 +190,17 @@ public class DLSiteMetadataProvider : OnDemandMetadataProvider
 
         if (IsBackgroundDownload)
         {
-            return new MetadataFile(images.First());
+            if (images.Count == 1)
+            {
+                return new MetadataFile(images.First());
+            }
+
+            if (images.Count > 1)
+            {
+                return new MetadataFile(images[1]);
+            }
+
+            return null;
         }
 
         var imageFileOption =
@@ -273,12 +283,11 @@ public class DLSiteMetadataProvider : OnDemandMetadataProvider
         return new[] { property };
     }
 
-    // public override MetadataFile GetIcon(GetMetadataFieldArgs args)
-    // {
-    //     var icon = GetResult(args)?.Icon;
-    //     var current = base.GetIcon(args);
-    //     return current ?? new MetadataFile(icon);
-    // }
+    public override MetadataFile GetIcon(GetMetadataFieldArgs args)
+    {
+        var current = base.GetIcon(args);
+        return current ?? new MetadataFile(GetResult(args)?.Icon);
+    }
 
     public override IEnumerable<MetadataProperty> GetPublishers(GetMetadataFieldArgs args)
     {
