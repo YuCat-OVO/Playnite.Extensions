@@ -99,7 +99,7 @@ public class FanzaMetadataProvider : OnDemandMetadataProvider
                 return null;
             }
 
-            choosedGameUrl = searchResult.First().Href;
+            choosedGameUrl = searchResult.OrderBy(x => GetSimilarity(x.Name, Game.Name)).First().Href;
         }
         else
         {
@@ -401,5 +401,29 @@ public class FanzaMetadataProvider : OnDemandMetadataProvider
     {
         var result = GetResult(args)?.Circle;
         return new[] { new MetadataNameProperty(result) };
+    }
+
+    private static int GetSimilarity(string str1, string str2)
+    {
+        var distance = new int[str1.Length + 1, str2.Length + 1];
+
+        for (var i = 0; i <= str1.Length; i++)
+            distance[i, 0] = i;
+
+        for (var j = 0; j <= str2.Length; j++)
+            distance[0, j] = j;
+
+        for (var i = 1; i <= str1.Length; i++)
+        {
+            for (var j = 1; j <= str2.Length; j++)
+            {
+                var cost = str1[i - 1] == str2[j - 1] ? 0 : 1;
+                distance[i, j] = Math.Min(
+                    Math.Min(distance[i - 1, j] + 1, distance[i, j - 1] + 1),
+                    distance[i - 1, j - 1] + cost);
+            }
+        }
+
+        return distance[str1.Length, str2.Length];
     }
 }

@@ -316,11 +316,11 @@ public class FanzaGameScrapper : IScrapper
 
     public string? GetGameIdFromLinks(IEnumerable<string> links)
     {
-        return links.Where(link =>
+        return links
+            .Where(link =>
                 link.StartsWith(BaseGamePageUrl, StringComparison.OrdinalIgnoreCase)
-                || link.StartsWith(BaseMonoGamePageUrl, StringComparison.OrdinalIgnoreCase)
-            )
-            .Select(ParseLinkId).Where(x => !string.IsNullOrEmpty(x)).FirstOrDefault();
+                || link.StartsWith(BaseMonoGamePageUrl, StringComparison.OrdinalIgnoreCase))
+            .Select(ParseLinkId).FirstOrDefault(x => !string.IsNullOrEmpty(x));
     }
 
     private class Product
