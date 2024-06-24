@@ -120,7 +120,8 @@ public class DLSiteMetadataProvider : OnDemandMetadataProvider
             return null;
         }
 
-        var task = scrapper.ScrapGamePage(link, args.CancelToken, _settings.PreferredLanguage ?? Scrapper.DefaultLanguage);
+        var task = scrapper.ScrapGamePage(link, args.CancelToken,
+            _settings.PreferredLanguage ?? Scrapper.DefaultLanguage);
         task.Wait(args.CancelToken);
         _result = task.Result;
         _didRun = true;
@@ -139,11 +140,6 @@ public class DLSiteMetadataProvider : OnDemandMetadataProvider
         if (result is null) return base.GetDevelopers(args);
 
         var staff = new List<string>();
-        if (result.Maker is not null)
-        {
-            staff.Add(result.Maker);
-        }
-
         if (result.Illustrators is not null && _settings.IncludeIllustrators)
         {
             staff.AddRange(result.Illustrators);
@@ -204,7 +200,13 @@ public class DLSiteMetadataProvider : OnDemandMetadataProvider
 
     public override MetadataFile? GetCoverImage(GetMetadataFieldArgs args)
     {
-        return SelectImage(args, "Select Cover Image");
+        var cover = GetResult(args)?.Cover;
+        if (cover is not null)
+        {
+            return new MetadataFile(cover);
+        }
+
+        return cover is null ? base.GetCoverImage(args) : SelectImage(args, "Select Cover Image");
     }
 
     public override MetadataFile? GetBackgroundImage(GetMetadataFieldArgs args)
@@ -271,15 +273,16 @@ public class DLSiteMetadataProvider : OnDemandMetadataProvider
         return new[] { property };
     }
 
-    public override MetadataFile GetIcon(GetMetadataFieldArgs args)
-    {
-        var icon = GetResult(args)?.Icon;
-        return icon is null ? base.GetIcon(args) : new MetadataFile(icon);
-    }
+    // public override MetadataFile GetIcon(GetMetadataFieldArgs args)
+    // {
+    //     var icon = GetResult(args)?.Icon;
+    //     var current = base.GetIcon(args);
+    //     return current ?? new MetadataFile(icon);
+    // }
 
     public override IEnumerable<MetadataProperty> GetPublishers(GetMetadataFieldArgs args)
     {
-        return new[] { new MetadataNameProperty("DLsite") };
+        return new[] { new MetadataNameProperty(GetResult(args)?.Maker) };
     }
 
     public override string GetDescription(GetMetadataFieldArgs args)
@@ -287,13 +290,18 @@ public class DLSiteMetadataProvider : OnDemandMetadataProvider
         var result = GetResult(args);
         if (result is null) return base.GetDescription(args);
 
-        return result.DescriptionHtml ?? "";
+        return result.DescriptionHtml?.Trim() ?? "";
     }
 
     public override int? GetCommunityScore(GetMetadataFieldArgs args)
     {
         var result = GetResult(args);
         return result?.Score;
+    }
+
+    public override IEnumerable<MetadataProperty> GetAgeRatings(GetMetadataFieldArgs args)
+    {
+        return new[] { new MetadataNameProperty(GetResult(args)?.AgeRating) };
     }
 
     public override IEnumerable<MetadataProperty> GetRegions(GetMetadataFieldArgs args)

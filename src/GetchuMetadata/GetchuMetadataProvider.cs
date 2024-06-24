@@ -1,7 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading.Tasks;
+using AngleSharp.Text;
 using Extensions.Common;
 using Microsoft.Extensions.Logging;
 using Playnite.SDK;
@@ -19,6 +25,8 @@ public class GetchuMetadataProvider : OnDemandMetadataProvider
     private readonly MetadataRequestOptions _options;
     private Game Game => _options.GameData;
     private bool IsBackgroundDownload => _options.IsBackgroundDownload;
+
+    private static readonly HttpClient HttpClient = new();
 
     public override List<MetadataField> AvailableFields => GetchuMetadataPlugin.Fields;
 
@@ -50,7 +58,7 @@ public class GetchuMetadataProvider : OnDemandMetadataProvider
     {
         if (_didRun) return _result;
 
-        var scrapper = new Scrapper(CustomLogger.GetLogger<Scrapper>(nameof(Scrapper)), new HttpClientHandler());
+        var scrapper = new Scrapper(CustomLogger.GetLogger<Scrapper>(nameof(Scrapper)));
 
         var link = GetLinkFromGame(Game);
         if (link is null)
@@ -114,8 +122,7 @@ public class GetchuMetadataProvider : OnDemandMetadataProvider
             return null;
         }
 
-        var task = scrapper.ScrapGamePage(link, args.CancelToken,
-            _settings.PreferredLanguage ?? Scrapper.DefaultLanguage);
+        var task = scrapper.ScrapGamePage(link, args.CancelToken);
         task.Wait(args.CancelToken);
         _result = task.Result;
         _didRun = true;
@@ -134,29 +141,10 @@ public class GetchuMetadataProvider : OnDemandMetadataProvider
         if (result is null) return base.GetDevelopers(args);
 
         var staff = new List<string>();
-        if (result.Maker is not null)
-        {
-            staff.Add(result.Maker);
-        }
 
         if (result.Illustrators is not null && _settings.IncludeIllustrators)
         {
             staff.AddRange(result.Illustrators);
-        }
-
-        if (result.MusicCreators is not null && _settings.IncludeMusicCreators)
-        {
-            staff.AddRange(result.MusicCreators);
-        }
-
-        if (result.ScenarioWriters is not null && _settings.IncludeScenarioWriters)
-        {
-            staff.AddRange(result.ScenarioWriters);
-        }
-
-        if (result.VoiceActors is not null && _settings.IncludeVoiceActors)
-        {
-            staff.AddRange(result.VoiceActors);
         }
 
         var developers = staff
@@ -174,6 +162,8 @@ public class GetchuMetadataProvider : OnDemandMetadataProvider
         return developers;
     }
 
+
+
     public override IEnumerable<Link> GetLinks(GetMetadataFieldArgs args)
     {
         var link = GetResult(args)?.Link;
@@ -185,22 +175,81 @@ public class GetchuMetadataProvider : OnDemandMetadataProvider
     private MetadataFile? SelectImage(GetMetadataFieldArgs args, string caption)
     {
         var images = GetResult(args)?.ProductImages;
-        if (images is null || !images.Any()) return null;
+        if (images is null || !images.Any())
+        {
+            _logger.Log(LogLevel.Information, "No Select Image {images}", images);
+            return null;
+        }
+
 
         if (IsBackgroundDownload)
         {
-            return new MetadataFile(images.First());
+            var task = DownloadImageAndGetPath(images.First(), GetResult(args)?.Link);
+            task.Wait();
+            return new MetadataFile(task.Result);
         }
 
+        var link = GetResult(args)?.Link;
         var imageFileOption =
-            _playniteAPI.Dialogs.ChooseImageFile(images.Select(image => new ImageFileOption(image)).ToList(), caption);
+            _playniteAPI.Dialogs.ChooseImageFile(images.Select(image =>
+                {
+                    var task = DownloadImageAndGetPath(image, link);
+                    task.Wait();
+                    return new ImageFileOption(task.Result);
+                }
+            ).ToList(), caption);
         return imageFileOption == null ? null : new MetadataFile(imageFileOption.Path);
     }
 
     public override MetadataFile? GetCoverImage(GetMetadataFieldArgs args)
     {
         var icon = GetResult(args)?.Cover;
-        return icon is null ? base.GetIcon(args) : new MetadataFile(icon);
+        if (icon == null)
+        {
+            _logger.Log(LogLevel.Information, "Here Icon");
+            return base.GetIcon(args);
+        }
+
+        var task = DownloadImageAndGetPath(icon, GetResult(args)?.Link);
+        task.Wait();
+        return new MetadataFile(task.Result);
+    }
+
+    public async Task<string?> DownloadImageAndGetPath(string? imageUrl, string? href)
+    {
+        if (imageUrl == null)
+        {
+            return null;
+        }
+
+        var md5 = MD5.Create();
+        var hashBytes = md5.ComputeHash(Encoding.UTF8.GetBytes(imageUrl));
+        var filename = BitConverter.ToString(hashBytes).Replace("-", "") + ".jpg";
+
+        var tempDir = Path.Combine(Path.GetTempPath(), "getchu-images");
+        if (!File.Exists(tempDir))
+        {
+            Directory.CreateDirectory(tempDir);
+        }
+
+        var targetFile = Path.Combine(tempDir, filename);
+        if (File.Exists(targetFile))
+        {
+            return targetFile;
+        }
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, imageUrl);
+        if (!href?.StartsWith("https://www.") ?? false)
+        {
+            href = href?.ReplaceFirst("https://", "https://www.");
+        }
+        request.Headers.Add("Referer", href);
+        var httpResult = await HttpClient.SendAsync(request);
+
+        using var resultStream = await httpResult.Content.ReadAsStreamAsync();
+        using var fileStream = File.Create(targetFile);
+        await resultStream.CopyToAsync(fileStream);
+        return targetFile;
     }
 
     public override MetadataFile? GetBackgroundImage(GetMetadataFieldArgs args)
@@ -269,7 +318,7 @@ public class GetchuMetadataProvider : OnDemandMetadataProvider
 
     public override IEnumerable<MetadataProperty> GetPublishers(GetMetadataFieldArgs args)
     {
-        return new[] { new MetadataNameProperty("Getchu") };
+        return new[] { new MetadataNameProperty(GetResult(args)?.Maker) };
     }
 
     public override string GetDescription(GetMetadataFieldArgs args)

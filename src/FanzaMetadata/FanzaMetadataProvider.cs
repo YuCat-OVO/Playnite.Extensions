@@ -57,7 +57,8 @@ public class FanzaMetadataProvider : OnDemandMetadataProvider
         var doujinGameScrapper = new DoujinGameScrapper(
             CustomLogger.GetLogger<DoujinGameScrapper>(nameof(DoujinGameScrapper)),
             clientHandler);
-        var gameScrapper = new FanzaGameScrapper(CustomLogger.GetLogger<FanzaGameScrapper>(nameof(FanzaGameScrapper)), clientHandler);
+        var gameScrapper = new FanzaGameScrapper(CustomLogger.GetLogger<FanzaGameScrapper>(nameof(FanzaGameScrapper)),
+            clientHandler);
 
         return new ScrapperManager(new List<IScrapper>() { gameScrapper, doujinGameScrapper });
     }
@@ -212,21 +213,45 @@ public class FanzaMetadataProvider : OnDemandMetadataProvider
         return GetResult(args)?.Title ?? base.GetName(args);
     }
 
-    public override MetadataFile GetIcon(GetMetadataFieldArgs args)
-    {
-        var iconUrl = GetResult(args)?.IconUrl;
-        return iconUrl is null ? base.GetIcon(args) : new MetadataFile(iconUrl);
-    }
+    // Use .exe icon as default
+    // public override MetadataFile GetIcon(GetMetadataFieldArgs args)
+    // {
+    //     var iconUrl = GetResult(args)?.IconUrl;
+    //     return iconUrl is null ? base.GetIcon(args) : new MetadataFile(iconUrl);
+    // }
 
     public override IEnumerable<MetadataProperty> GetDevelopers(GetMetadataFieldArgs args)
     {
-        var circle = GetResult(args)?.Circle;
-        if (circle is null) return base.GetDevelopers(args);
+        var result = GetResult(args);
+        if (result is null) return base.GetDevelopers(args);
 
-        var company = _playniteAPI.Database.Companies.Where(x => x.Name is not null)
-            .FirstOrDefault(x => x.Name.Equals(circle, StringComparison.OrdinalIgnoreCase));
-        if (company is not null) return new[] { new MetadataIdProperty(company.Id) };
-        return new[] { new MetadataNameProperty(circle) };
+        var developers = new List<string>();
+        if (result.Illustrators is not null)
+        {
+            developers.AddRange(result.Illustrators);
+        }
+
+        if (result.ScenarioWriters is not null)
+        {
+            developers.AddRange(result.ScenarioWriters);
+        }
+
+        if (result.VoiceActors is not null)
+        {
+            developers.AddRange(result.VoiceActors);
+        }
+
+        return developers
+            .Select(name => (name,
+                _playniteAPI.Database.Companies.Where(x => x.Name is not null).FirstOrDefault(company =>
+                    company.Name.Equals(name, StringComparison.OrdinalIgnoreCase))))
+            .Select(tuple =>
+            {
+                var (name, company) = tuple;
+                if (company is not null) return (MetadataProperty)new MetadataIdProperty(company.Id);
+                return new MetadataNameProperty(name);
+            })
+            .ToList();
     }
 
     public override IEnumerable<Link> GetLinks(GetMetadataFieldArgs args)
@@ -251,7 +276,7 @@ public class FanzaMetadataProvider : OnDemandMetadataProvider
     {
         var result = GetResult(args);
         if (result is null) return base.GetDescription(args);
-        return result.Description ?? "";
+        return result.Description?.Trim() ?? "";
     }
 
     public override IEnumerable<MetadataProperty> GetAgeRatings(GetMetadataFieldArgs args)
@@ -290,10 +315,11 @@ public class FanzaMetadataProvider : OnDemandMetadataProvider
     public override MetadataFile? GetCoverImage(GetMetadataFieldArgs args)
     {
         var res = GetResult(args);
-        if (res?.coverUrl != null)
+        if (res?.CoverUrl != null)
         {
-            return new MetadataFile(res.coverUrl);
+            return new MetadataFile(res.CoverUrl);
         }
+
         return SelectImage(args, "Select Cover Image");
     }
 
@@ -329,7 +355,7 @@ public class FanzaMetadataProvider : OnDemandMetadataProvider
             _playniteAPI,
             _settings.GenreProperty,
             currentProperty,
-            () => GetResult(args)?.Genres);
+            () => GetResult(args)?.Genres?.Where(x => _settings.TagFilter.All(regex => !regex.IsMatch(x))));
 
         // Game Genre/Theme
         var gameGenreProperties = PlaynitePropertyHelper.ConvertValuesIfPossible(
@@ -359,5 +385,11 @@ public class FanzaMetadataProvider : OnDemandMetadataProvider
     public override IEnumerable<MetadataProperty> GetGenres(GetMetadataFieldArgs args)
     {
         return GetProperties(args, PlayniteProperty.Genres) ?? base.GetGenres(args);
+    }
+
+    public override IEnumerable<MetadataProperty> GetPublishers(GetMetadataFieldArgs args)
+    {
+        var result = GetResult(args)?.Circle;
+        return new[] { new MetadataNameProperty(result) };
     }
 }

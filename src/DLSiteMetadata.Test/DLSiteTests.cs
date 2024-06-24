@@ -51,7 +51,7 @@ public class DLSiteTests
         Assert.NotEmpty(res.ScenarioWriters!);
         Assert.NotNull(res.VoiceActors);
         Assert.NotEmpty(res.VoiceActors!);
-        Assert.NotNull(res.Icon);
+        Assert.NotNull(res.Cover);
     }
 
     [Theory]

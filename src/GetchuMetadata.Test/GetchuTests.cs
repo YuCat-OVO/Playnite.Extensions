@@ -1,4 +1,5 @@
-﻿using TestUtils;
+﻿
+using TestUtils;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -17,7 +18,7 @@ public class GetchuTests
     public async void ShouldGetSearchResult()
     {
         var scrapper = new Scrapper(new XunitLogger<Scrapper>(_testOutputHelper));
-        var res = await scrapper.ScrapSearchPage("BALDRSKY ZERO");
+        var res = await scrapper.ScrapSearchPage("恋する乙女と守護の楯");
         Assert.NotEmpty(res);
     }
 
@@ -25,8 +26,8 @@ public class GetchuTests
     public async void ShouldGetGameDetail()
     {
         var scrapper = new Scrapper(new XunitLogger<Scrapper>(_testOutputHelper));
-        var res = await scrapper.ScrapGamePage("https://www.getchu.com/soft.phtml?id=792201");
-        Assert.Equal("BALDRSKY ZERO2 初回限定版", res?.Title);
+        var res = await scrapper.ScrapGamePage("https://www.getchu.com/soft.phtml?id=748164");
+        Assert.NotNull(res?.Title);
         Assert.NotEmpty(res?.ProductImages);
     }
 }

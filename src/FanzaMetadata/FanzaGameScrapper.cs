@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -11,6 +12,7 @@ using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using AngleSharp.Text;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace FanzaMetadata;
 
@@ -121,69 +123,108 @@ public class FanzaGameScrapper : IScrapper
         };
         if (link.StartsWith(BaseGamePageUrl, StringComparison.OrdinalIgnoreCase))
         {
-            result.Title = document.GetElementById("title")?.Text().Trim();
-            result.Circle = document.GetElementsByClassName("brand").Children(".content").First().Text().Trim();
+            result.Title = document.QuerySelector(".productTitle .productTitle__headline")?.Text().Trim();
+            var detailTop = document.QuerySelectorAll(".contentsDetailTop__tableRow")
+                .GroupBy(x => x.Children.First().Text().Trim())
+                .ToDictionary(x => x.Key, x => x.First().Children.Last().Text().Trim());
+            result.Circle = detailTop["ブランド"];
 
             result.PreviewImages = document.GetElementsByClassName("image-slider").Children("li").Children("img")
                 .Cast<IHtmlImageElement>().Select(x => x.Source ?? "").Where(x => !string.IsNullOrEmpty(x)).ToList();
 
-            const string ratingPrefix = "d-rating-";
-            result.Rating = document.QuerySelector(".review div")!.ClassList
-                .Where(className => className.StartsWith(ratingPrefix))
-                .Select(className => className.Replace(ratingPrefix, ""))
-                .Select(rating => double.Parse(rating) / 10D).First();
+            var rating = document.QuerySelectorAll("script[type='application/ld+json']")
+                .Select(x =>
+                    JsonSerializer.Create()
+                        .Deserialize<Product>(new JsonTextReader(new StringReader(x.Text()))))
+                .Where(x => x?.Type?.Equals("Product") == true)
+                .Select(x => x.AggregateRating?.RatingValue)
+                .First()?.ToDouble();
+            if (rating != null)
+            {
+                result.Rating = rating.Value;
+            }
 
-            result.Description = document.QuerySelector(".read-text-area p.text-overflow")?.OuterHtml.Trim();
+            // const string ratingPrefix = "d-rating-";
+            // result.Rating = document.QuerySelector(".review div")!.ClassList
+            //     .Where(className => className.StartsWith(ratingPrefix))
+            //     .Select(className => className.Replace(ratingPrefix, ""))
+            //     .Select(rating => double.Parse(rating) / 10D).First();
+
+            result.Description = document.GetElementById("detailGuide")?.OuterHtml.Trim();
 
             var r18NavigationBarLength = document.GetElementsByClassName("_n4v1-link-r18-name").Length;
             result.Adult = r18NavigationBarLength <= 0;
 
-            // <tr>
-            //  <td class="type-left">ダウンロード版対応OS</td>
-            //  <td class="type-center">：</td>
-            //  <td class="type-right"></td>
-            // </tr>
-            // key is type-left class text, value is type-right class element
-            var productDetailDict =
-                document.QuerySelectorAll(".main-area-center .container02 table tbody tr .type-left")
-                    .ToDictionary(ele => ele.Text().Trim(),
-                        v => v.ParentElement?.GetElementsByClassName("type-right").First());
+            var detailBottom = document.QuerySelectorAll(".contentsDetailBottom__tableRow")
+                .GroupBy(x => x.Children.First().Text().Trim())
+                .ToDictionary(x => x.Key, x => x.First().Children.Last());
 
-            var dateStr = productDetailDict["配信開始日"]?.Text().Trim();
+            var dateStr = detailBottom["配信開始日"]?.Text().Trim();
             if (DateTime.TryParseExact(dateStr, "yyyy/MM/dd", null, DateTimeStyles.None, out var releaseDate))
             {
                 result.ReleaseDate = releaseDate;
             }
 
             const string noneVal = "----";
-            var gameGenre = productDetailDict["ゲームジャンル"]?.Text().Trim();
+            var gameGenre = detailBottom["ゲームジャンル"]?.Text().Trim();
             if (!noneVal.Equals(gameGenre))
             {
                 result.GameGenre = gameGenre;
             }
 
-            var series = productDetailDict["シリーズ"]?.Text().Trim();
+            var series = detailBottom["シリーズ"]?.Text().Trim();
             if (!noneVal.Equals(series))
             {
                 result.Series = series;
             }
 
-            var tags = productDetailDict["ジャンル"]?.GetElementsByTagName("a").Select(x => x.Text().Trim()).ToList();
+            var tags = detailBottom["ジャンル"]?.GetElementsByTagName("a")
+                .Select(x => x.Text().Trim())
+                .ToList();
             result.Genres = tags;
 
-            result.IconUrl = string.Format(PosterUrlPattern, id);
+            result.CoverUrl = string.Format(PosterUrlPattern, id);
+
+            if (detailBottom.ContainsKey("原画"))
+            {
+                result.Illustrators = detailBottom["原画"]
+                    .QuerySelectorAll("li a")
+                    .Select(x => x.Text().Trim()).ToList();
+            }
+
+            if (detailBottom.ContainsKey("シナリオ"))
+            {
+                result.ScenarioWriters = detailBottom["シナリオ"]
+                    .QuerySelectorAll("li a")
+                    .Select(x => x.Text().Trim()).ToList();
+            }
+
+            if (detailBottom.ContainsKey("声優"))
+            {
+                result.VoiceActors = detailBottom["声優"]
+                    .QuerySelectorAll("li")
+                    .Select(x => x.Text().Trim()).ToList();
+            }
         }
         else
         {
+            // MONO page
             result.Title = document.GetElementById("title")?.Text().Trim();
-            var productDetailDict = document.QuerySelectorAll("table.mg-b20 tbody tr")
-                .ToDictionary(ele => ele.FirstElementChild?.Text().Replace("：", "").Trim(),
-                    v => v.LastElementChild);
+            // css
+            var productDetailDict = document.QuerySelectorAll(".wrapper-detailContents .wrapper-product table tr")
+                .Select(ele =>
+                {
+                    var key = ele.FirstElementChild?.Text().Replace("：", "").Trim();
+                    var value = ele.LastElementChild;
+                    return new KeyValuePair<string, IElement>(key!, value!);
+                })
+                .Where(pair => !string.IsNullOrEmpty(pair.Key))
+                .ToDictionary(ele => ele.Key, ele => ele.Value);
 
             result.Circle = productDetailDict["ブランド"]?.Text().Trim();
             result.PreviewImages = document.QuerySelectorAll("#sample-image-block a img")
                 .Cast<IHtmlImageElement>()
-                .Select(x => x.Source ?? "")
+                .Select(x => x.GetAttribute("data-lazy") ?? "")
                 .Where(x => !string.IsNullOrEmpty(x))
                 .Select(x => x.ReplaceFirst("js-", "jp-"))
                 .ToList();
@@ -233,14 +274,35 @@ public class FanzaGameScrapper : IScrapper
             }
 
 
-            if (productDetailDict.ContainsKey("関連タグ"))
+            if (productDetailDict.ContainsKey("ジャンル"))
             {
-                var tags = productDetailDict["関連タグ"]?.QuerySelectorAll("li a")
+                var tags = productDetailDict["ジャンル"]?.QuerySelectorAll("td a")
                     .Select(x => x.Text().Replace("#", "").Trim()).ToList();
                 result.Genres = tags;
             }
 
-            result.coverUrl = string.Format("https://pics.dmm.co.jp/mono/game/{0}/{0}pl.jpg", id);
+            result.CoverUrl = string.Format("https://pics.dmm.co.jp/mono/game/{0}/{0}pl.jpg", id);
+
+            if (productDetailDict.ContainsKey("原画"))
+            {
+                result.Illustrators = productDetailDict["原画"]
+                    .QuerySelectorAll("td a")
+                    .Select(x => x.Text().Trim()).ToList();
+            }
+
+            if (productDetailDict.ContainsKey("シナリオ"))
+            {
+                result.ScenarioWriters = productDetailDict["シナリオ"]
+                    .QuerySelectorAll("td a")
+                    .Select(x => x.Text().Trim()).ToList();
+            }
+
+            // if (productDetailDict.ContainsKey("ボイス"))
+            // {
+            //     result.VoiceActors = productDetailDict["ボイス"]
+            //         .QuerySelectorAll("td")
+            //         .Select(x => x.Text().Trim()).ToList();
+            // }
         }
 
         return result;
@@ -259,5 +321,21 @@ public class FanzaGameScrapper : IScrapper
                 || link.StartsWith(BaseMonoGamePageUrl, StringComparison.OrdinalIgnoreCase)
             )
             .Select(ParseLinkId).Where(x => !string.IsNullOrEmpty(x)).FirstOrDefault();
+    }
+
+    private class Product
+    {
+        [JsonProperty("@type")]
+        public string? Type { get; set; }
+        [JsonProperty("aggregateRating")]
+        public AggregateRating? AggregateRating { get; set; }
+    }
+
+    private class AggregateRating
+    {
+        [JsonProperty("@type")]
+        public string? Type { get; set; }
+        [JsonProperty("ratingValue")]
+        public string? RatingValue { get; set; }
     }
 }

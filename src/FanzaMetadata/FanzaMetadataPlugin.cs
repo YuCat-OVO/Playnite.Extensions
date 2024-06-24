@@ -26,7 +26,7 @@ public class FanzaMetadataPlugin : MetadataPlugin
         MetadataField.Developers,
         MetadataField.Features,
         MetadataField.Genres,
-        MetadataField.Icon,
+        // MetadataField.Icon,
         MetadataField.Links,
         MetadataField.Name,
         MetadataField.Series,
@@ -37,7 +37,8 @@ public class FanzaMetadataPlugin : MetadataPlugin
         MetadataField.ReleaseDate,
         MetadataField.AgeRating,
         MetadataField.Description,
-        MetadataField.Region
+        MetadataField.Region,
+        MetadataField.Publishers
     };
 
     public FanzaMetadataPlugin(IPlayniteAPI playniteAPI) : base(playniteAPI)

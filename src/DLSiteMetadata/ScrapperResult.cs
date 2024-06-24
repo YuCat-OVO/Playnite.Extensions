@@ -21,7 +21,9 @@ public class ScrapperResult
     public List<string>? Genres { get; set; }
     public string? DescriptionHtml { get; set; }
     public int? Score { get; set; }
+    public string? Cover { get; set; }
     public string? Icon { get; set; }
+    public string? AgeRating { get; set; }
 }
 
 [DebuggerDisplay("{Title} ({Href})")]

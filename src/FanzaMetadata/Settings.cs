@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Extensions.Common;
 using Playnite.SDK;
 using Playnite.SDK.Plugins;
@@ -15,7 +16,20 @@ public class Settings : ISettings
     public PlayniteProperty GenreProperty { get; set; } = PlayniteProperty.Tags;
     public PlayniteProperty GameGenreProperty { get; set; } = PlayniteProperty.Genres;
 
-    public Settings() { }
+    public List<Regex> TagFilter { get; set; } = new()
+    {
+        new Regex(@"Windows\d+"),
+        new Regex("還元"),
+        new Regex("独占販売"),
+        new Regex("初回購入者"),
+        new Regex("スプリングセール"),
+        new Regex("体験版"),
+    };
+
+    public Settings()
+    {
+
+    }
 
     public Settings(Plugin plugin, IPlayniteAPI playniteAPI)
     {
@@ -27,6 +41,7 @@ public class Settings : ISettings
         {
             GenreProperty = savedSettings.GenreProperty;
             GameGenreProperty = savedSettings.GameGenreProperty;
+            TagFilter = savedSettings.TagFilter;
         }
     }
 
@@ -37,7 +52,8 @@ public class Settings : ISettings
         _previousSettings = new Settings
         {
             GenreProperty = GenreProperty,
-            GameGenreProperty = GameGenreProperty
+            GameGenreProperty = GameGenreProperty,
+            TagFilter = TagFilter
         };
     }
 
@@ -53,6 +69,7 @@ public class Settings : ISettings
 
         GenreProperty = _previousSettings.GenreProperty;
         GameGenreProperty = _previousSettings.GameGenreProperty;
+        TagFilter = _previousSettings.TagFilter;
     }
 
     public bool VerifySettings(out List<string> errors)
