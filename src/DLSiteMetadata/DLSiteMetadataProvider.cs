@@ -291,6 +291,7 @@ public class DLSiteMetadataProvider : OnDemandMetadataProvider
 
     public override IEnumerable<MetadataProperty> GetPublishers(GetMetadataFieldArgs args)
     {
+        _logger.Log(LogLevel.Information, "DLSiteMaker === {Maker}", GetResult(args)?.Maker);
         return new[] { new MetadataNameProperty(GetResult(args)?.Maker) };
     }
 
