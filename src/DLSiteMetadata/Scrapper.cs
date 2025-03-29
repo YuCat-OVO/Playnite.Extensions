@@ -25,6 +25,7 @@ public class Scrapper
     public const string ProductBaseUrl = SiteBaseUrl + "maniax/work/=/product_id/";
 
     public static string SearchFormatUrl = SiteBaseUrl + BuildSearchUrl();
+    static readonly HttpClient httpclient = new();
 
     public static string BuildSearchUrl()
     {
@@ -116,26 +117,34 @@ public class Scrapper
             res.Maker = makerNameAnchorElement.Text().Trim();
         }
 
+        if (res.Maker == null)
+        {
+            res.Maker = makerNameElement?.Text();
+        }
+
         var addFollowElement = document.GetElementsByClassName("add_follow").FirstOrDefault();
         if (addFollowElement is not null)
         {
             res.Maker = addFollowElement.GetAttribute("data-follow-name");
         }
 
-        var descriptionElements = document.GetElementsByClassName("work_parts_container").FirstOrDefault().Children;
+        var descriptionElements = document.GetElementsByClassName("work_parts_container").FirstOrDefault()?.Children;
         var descriptionHtml = "";
-        foreach (var element in descriptionElements)
+        if (descriptionElements is not null)
         {
-            if (element.ClassName == "work_parts type_chobit")
+            foreach (var element in descriptionElements)
             {
-                continue;
+                if (element.ClassName == "work_parts type_chobit")
+                {
+                    continue;
+                }
+
+                var newHtml = element.InnerHtml.Replace("<img src=\"//", "<img src=\"https://");
+                newHtml = newHtml.Replace("<a href=\"//", "<a href=\"https://");
+                descriptionHtml += newHtml;
             }
 
-            var newHtml = element.InnerHtml.Replace("<img src=\"//", "<img src=\"https://");
-            newHtml = newHtml.Replace("<a href=\"//", "<a href=\"https://");
-            descriptionHtml += newHtml;
         }
-
         res.DescriptionHtml = descriptionHtml;
 
         var imageMatches = _imageLinkRegex.Matches(descriptionHtml);
@@ -407,6 +416,50 @@ public class Scrapper
             }
         }
 
+        if (results.Count == 0)
+        {
+            // use suggestion api much better results
+            var time = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            url = $"https://www.dlsite.com/suggest/?term={term}&site=pro&time={time}";
+
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Add("Cookie", $"locale={language};adultchecked=1");
+            request.Headers.Add("User-Agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3");
+            var response = await httpclient.SendAsync(request, cancellationToken);
+            var body = await response.Content.ReadAsStringAsync();
+            if (body == null)
+            {
+                return results;
+            }
+
+            var suggestions = JsonConvert.DeserializeObject<SuggestionResult>(body);
+            suggestions.Work
+                .ForEach(work =>
+                {
+                    var workNo = work.WorkNo;
+                    var url = (work.IsAna == true)
+                        ? $"https://www.dlsite.com/soft/announce/=/product_id/{workNo}.html"
+                        : $"https://www.dlsite.com/soft/work/=/product_id/{workNo}.html";
+                    var searchItem = new SearchResult(work.WorkName,
+                        url
+                    );
+                    results.Add(searchItem);
+                });
+        }
         return results;
+    }
+
+    private struct SuggestionItem
+    {
+        [JsonProperty("work_name")] public string WorkName { get; set; }
+        [JsonProperty("workno")] public string? WorkNo { get; set; }
+        [JsonProperty("work_type")] public string? WorkType { get; set; }
+        [JsonProperty("is_ana")] public bool? IsAna { get; set; }
+    }
+
+    private struct SuggestionResult
+    {
+        [JsonProperty("work")] public List<SuggestionItem> Work { get; set; }
     }
 }
