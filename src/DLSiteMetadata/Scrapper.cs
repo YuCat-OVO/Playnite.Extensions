@@ -420,7 +420,7 @@ public class Scrapper
         {
             // use suggestion api much better results
             var time = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            url = $"https://www.dlsite.com/suggest/?term={term}&site=pro&time={time}";
+            url = $"https://www.dlsite.com/suggest/?term={term}&site=adult-jp&time={time}";
 
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Add("Cookie", $"locale={language};adultchecked=1");
