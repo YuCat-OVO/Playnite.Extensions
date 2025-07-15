@@ -1,5 +1,9 @@
 AddonId: GetchuMetadata
 Packages:
+- PackageUrl: https://github.com/erri120/Playnite.Extensions/releases/download/v2.5.13/GetchuMetadata.pext
+  ReleaseDate: '2025-07-15'
+  RequiredApiVersion: 6.8.0
+  Version: 2.5.13
 - PackageUrl: https://github.com/erri120/Playnite.Extensions/releases/download/v2.5.12/GetchuMetadata.pext
   ReleaseDate: '2024-06-25'
   RequiredApiVersion: 6.8.0
