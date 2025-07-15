@@ -12,7 +12,7 @@ namespace DLSiteMetadata;
 
 public class DLSiteMetadataProvider : OnDemandMetadataProvider
 {
-    private readonly IPlayniteAPI _playniteAPI;
+    private readonly IPlayniteAPI _playniteApi;
     private readonly Settings _settings;
     private readonly ILogger<DLSiteMetadataProvider> _logger;
 
@@ -22,9 +22,9 @@ public class DLSiteMetadataProvider : OnDemandMetadataProvider
 
     public override List<MetadataField> AvailableFields => DLSiteMetadataPlugin.Fields;
 
-    public DLSiteMetadataProvider(IPlayniteAPI playniteAPI, Settings settings, MetadataRequestOptions options)
+    public DLSiteMetadataProvider(IPlayniteAPI playniteApi, Settings settings, MetadataRequestOptions options)
     {
-        _playniteAPI = playniteAPI;
+        _playniteApi = playniteApi;
         _settings = settings;
         _options = options;
 
@@ -81,7 +81,7 @@ public class DLSiteMetadataProvider : OnDemandMetadataProvider
             }
             else
             {
-                var item = _playniteAPI.Dialogs.ChooseItemWithSearch(
+                var item = _playniteApi.Dialogs.ChooseItemWithSearch(
                     new List<GenericItemOption>(),
                     searchString =>
                     {
@@ -162,7 +162,7 @@ public class DLSiteMetadataProvider : OnDemandMetadataProvider
 
         var developers = staff
             .Select(name => (name,
-                _playniteAPI.Database.Companies.Where(x => x.Name is not null).FirstOrDefault(company =>
+                _playniteApi.Database.Companies.Where(x => x.Name is not null).FirstOrDefault(company =>
                     company.Name.Equals(name, StringComparison.OrdinalIgnoreCase))))
             .Select(tuple =>
             {
@@ -190,11 +190,21 @@ public class DLSiteMetadataProvider : OnDemandMetadataProvider
 
         if (IsBackgroundDownload)
         {
-            return new MetadataFile(images.First());
+            if (images.Count == 1)
+            {
+                return new MetadataFile(images.First());
+            }
+
+            if (images.Count > 1)
+            {
+                return new MetadataFile(images[1]);
+            }
+
+            return null;
         }
 
         var imageFileOption =
-            _playniteAPI.Dialogs.ChooseImageFile(images.Select(image => new ImageFileOption(image)).ToList(), caption);
+            _playniteApi.Dialogs.ChooseImageFile(images.Select(image => new ImageFileOption(image)).ToList(), caption);
         return imageFileOption == null ? null : new MetadataFile(imageFileOption.Path);
     }
 
@@ -227,14 +237,14 @@ public class DLSiteMetadataProvider : OnDemandMetadataProvider
     {
         // Categories
         var categoryProperties = PlaynitePropertyHelper.ConvertValuesIfPossible(
-            _playniteAPI,
+            _playniteApi,
             _settings.CategoryProperty,
             currentProperty,
             () => GetResult(args)?.Categories);
 
         // Genres
         var genreProperties = PlaynitePropertyHelper.ConvertValuesIfPossible(
-            _playniteAPI,
+            _playniteApi,
             _settings.GenreProperty,
             currentProperty,
             () => GetResult(args)?.Genres);
@@ -262,7 +272,7 @@ public class DLSiteMetadataProvider : OnDemandMetadataProvider
         var result = GetResult(args);
         if (result?.SeriesNames is null) return base.GetSeries(args);
 
-        var series = _playniteAPI.Database.Series
+        var series = _playniteApi.Database.Series
             .Where(x => x.Name is not null)
             .FirstOrDefault(series => series.Name.Equals(result.SeriesNames));
 
@@ -273,15 +283,15 @@ public class DLSiteMetadataProvider : OnDemandMetadataProvider
         return new[] { property };
     }
 
-    // public override MetadataFile GetIcon(GetMetadataFieldArgs args)
-    // {
-    //     var icon = GetResult(args)?.Icon;
-    //     var current = base.GetIcon(args);
-    //     return current ?? new MetadataFile(icon);
-    // }
+    public override MetadataFile GetIcon(GetMetadataFieldArgs args)
+    {
+        var current = base.GetIcon(args);
+        return current ?? new MetadataFile(GetResult(args)?.Icon);
+    }
 
     public override IEnumerable<MetadataProperty> GetPublishers(GetMetadataFieldArgs args)
     {
+        _logger.Log(LogLevel.Information, "DLSiteMaker === {Maker}", GetResult(args)?.Maker);
         return new[] { new MetadataNameProperty(GetResult(args)?.Maker) };
     }
 
@@ -295,8 +305,7 @@ public class DLSiteMetadataProvider : OnDemandMetadataProvider
 
     public override int? GetCommunityScore(GetMetadataFieldArgs args)
     {
-        var result = GetResult(args);
-        return result?.Score;
+        return GetResult(args)?.Score ?? base.GetCommunityScore(args);
     }
 
     public override IEnumerable<MetadataProperty> GetAgeRatings(GetMetadataFieldArgs args)

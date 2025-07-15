@@ -38,7 +38,7 @@ public class FanzaMetadataPlugin : MetadataPlugin
         MetadataField.AgeRating,
         MetadataField.Description,
         MetadataField.Region,
-        MetadataField.Publishers
+        MetadataField.Publishers,
     };
 
     public FanzaMetadataPlugin(IPlayniteAPI playniteAPI) : base(playniteAPI)
